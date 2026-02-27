@@ -191,8 +191,15 @@ export default function ProjectDetailPage() {
                     key={s.id}
                     className="rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3"
                   >
-                    <span className="font-medium text-white">{s.name}</span>
-                    <p className="text-xs text-slate-500">{s.base_url}</p>
+                    <Link
+                      href={`/systems/${s.id}`}
+                      className="flex flex-col"
+                    >
+                      <span className="font-medium text-white">
+                        {s.name}
+                      </span>
+                      <p className="text-xs text-slate-500">{s.base_url}</p>
+                    </Link>
                   </li>
                 ))}
               </ul>
