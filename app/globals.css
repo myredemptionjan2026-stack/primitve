@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primitive-bg: #0f172a;
+  --primitive-surface: #1e293b;
+  --primitive-border: #334155;
+  --primitive-muted: #64748b;
+  --primitive-accent: #0d9488;
+  --primitive-accent-hover: #0f766e;
+}
+
+body {
+  background: var(--primitive-bg);
+  color: #f8fafc;
+}
