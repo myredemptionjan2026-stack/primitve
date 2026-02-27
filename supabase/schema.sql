@@ -53,12 +53,34 @@ create table if not exists public.endpoints (
   unique(system_id, method, path)
 );
 
+-- Constraints discovered from docs, live test, or AI inference (for feasibility verdict)
+create table if not exists public.constraints (
+  id uuid primary key default gen_random_uuid(),
+  scenario_id uuid not null references public.scenarios(id) on delete cascade,
+  description text not null,
+  category text,
+  source text not null check (source in ('docs', 'live', 'inference')),
+  created_at timestamptz default now()
+);
+
+-- Field bookmarks: mark discovered fields as key ID or business-critical (per system)
+create table if not exists public.field_flags (
+  id uuid primary key default gen_random_uuid(),
+  system_id uuid not null references public.systems(id) on delete cascade,
+  field_path text not null,
+  flag text not null check (flag in ('key_id', 'business_critical')),
+  created_at timestamptz default now(),
+  unique(system_id, field_path)
+);
+
 -- Enable RLS (Row Level Security) - allow all for MVP; tighten later with auth
 alter table public.projects enable row level security;
 alter table public.systems enable row level security;
 alter table public.scenarios enable row level security;
 alter table public.field_mappings enable row level security;
 alter table public.endpoints enable row level security;
+alter table public.constraints enable row level security;
+alter table public.field_flags enable row level security;
 
 -- Policies: allow anonymous read/write for MVP (no auth yet)
 create policy "Allow all on projects" on public.projects for all using (true) with check (true);
@@ -66,3 +88,5 @@ create policy "Allow all on systems" on public.systems for all using (true) with
 create policy "Allow all on scenarios" on public.scenarios for all using (true) with check (true);
 create policy "Allow all on field_mappings" on public.field_mappings for all using (true) with check (true);
 create policy "Allow all on endpoints" on public.endpoints for all using (true) with check (true);
+create policy "Allow all on constraints" on public.constraints for all using (true) with check (true);
+create policy "Allow all on field_flags" on public.field_flags for all using (true) with check (true);

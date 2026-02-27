@@ -53,13 +53,21 @@ export default function DashboardPage() {
         <section>
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-lg font-medium text-slate-200">Projects</h2>
-            <button
-              type="button"
-              onClick={() => setShowNewProject(true)}
-              className="rounded-lg bg-primitive-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-primitive-accentHover"
-            >
-              New Integration Exploration
-            </button>
+            <div className="flex gap-2">
+              <Link
+                href="/explore/new"
+                className="rounded-lg bg-primitive-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-primitive-accentHover"
+              >
+                New Integration Exploration
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowNewProject(true)}
+                className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+              >
+                Quick create project
+              </button>
+            </div>
           </div>
 
           {showNewProject && (

@@ -26,6 +26,10 @@ export default function ProjectDetailPage() {
   const [scenarioDesc, setScenarioDesc] = useState("");
   const [specMarkdown, setSpecMarkdown] = useState<string | null>(null);
   const [specLoading, setSpecLoading] = useState(false);
+  const [useCaseText, setUseCaseText] = useState("");
+  const [useCaseParsing, setUseCaseParsing] = useState(false);
+  const [prefillCtaId, setPrefillCtaId] = useState<string>("");
+  const [prefillCtsId, setPrefillCtsId] = useState<string>("");
 
   useEffect(() => {
     Promise.all([
@@ -76,6 +80,8 @@ export default function ProjectDetailPage() {
         project_id: id,
         name: scenarioName.trim(),
         description: scenarioDesc.trim() || undefined,
+        cta_system_id: prefillCtaId || null,
+        cts_system_id: prefillCtsId || null,
       }),
     });
     if (res.ok) {
@@ -83,7 +89,36 @@ export default function ProjectDetailPage() {
       setScenarios((prev) => [created, ...prev]);
       setScenarioName("");
       setScenarioDesc("");
+      setPrefillCtaId("");
+      setPrefillCtsId("");
       setShowNewScenario(false);
+    }
+  }
+
+  async function parseUseCase() {
+    if (!useCaseText.trim()) return;
+    setUseCaseParsing(true);
+    try {
+      const res = await fetch("/api/ai/parse-usecase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: useCaseText.trim(),
+          systemNames: systems.map((s) => s.name),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data) {
+        setScenarioName(data.suggestedName ?? "");
+        setScenarioDesc(data.oneLiner ?? "");
+        const cta = systems.find((s) => s.name.toLowerCase().includes((data.ctaSystemName ?? "").toLowerCase()));
+        const cts = systems.find((s) => s.name.toLowerCase().includes((data.ctsSystemName ?? "").toLowerCase()));
+        setPrefillCtaId(cta?.id ?? "");
+        setPrefillCtsId(cts?.id ?? "");
+        setShowNewScenario(true);
+      }
+    } finally {
+      setUseCaseParsing(false);
     }
   }
 
@@ -257,6 +292,26 @@ export default function ProjectDetailPage() {
               </button>
             </div>
 
+            <div className="mb-4 rounded-xl border border-slate-700 bg-slate-800/40 p-4">
+              <h3 className="text-sm font-medium text-slate-300">Describe your integration (AI)</h3>
+              <p className="mt-1 text-xs text-slate-500">Describe the use case in a sentence; AI will suggest a scenario name and CTA/CTS systems.</p>
+              <textarea
+                value={useCaseText}
+                onChange={(e) => setUseCaseText(e.target.value)}
+                placeholder="e.g. When a work order is created in CorrigoPro, create a matching record in Salesforce."
+                rows={2}
+                className="mt-2 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-primitive-accent focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={parseUseCase}
+                disabled={useCaseParsing || !useCaseText.trim() || systems.length === 0}
+                className="mt-2 rounded-lg border border-primitive-accent px-3 py-1.5 text-sm text-primitive-accent hover:bg-slate-800 disabled:opacity-50"
+              >
+                {useCaseParsing ? "Parsing…" : "Parse & create scenario"}
+              </button>
+            </div>
+
             {showNewScenario && (
               <form
                 onSubmit={addScenario}
@@ -277,6 +332,36 @@ export default function ProjectDetailPage() {
                     rows={2}
                     className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white placeholder-slate-500 focus:border-primitive-accent focus:outline-none"
                   />
+                  {systems.length > 0 && (
+                    <>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-400">CTA system (source)</label>
+                        <select
+                          value={prefillCtaId}
+                          onChange={(e) => setPrefillCtaId(e.target.value)}
+                          className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white focus:border-primitive-accent focus:outline-none"
+                        >
+                          <option value="">— None —</option>
+                          {systems.map((s) => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-400">CTS system (target)</label>
+                        <select
+                          value={prefillCtsId}
+                          onChange={(e) => setPrefillCtsId(e.target.value)}
+                          className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white focus:border-primitive-accent focus:outline-none"
+                        >
+                          <option value="">— None —</option>
+                          {systems.map((s) => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
                   <div className="flex gap-2">
                     <button
                       type="submit"
@@ -347,9 +432,13 @@ export default function ProjectDetailPage() {
                 Download .md
               </button>
             </div>
-            <pre className="max-h-[60vh] overflow-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-xs text-slate-300 whitespace-pre-wrap font-sans">
-              {specMarkdown}
-            </pre>
+            <textarea
+              value={specMarkdown}
+              onChange={(e) => setSpecMarkdown(e.target.value)}
+              rows={24}
+              spellCheck={false}
+              className="w-full max-h-[60vh] overflow-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-xs text-slate-300 font-mono focus:border-primitive-accent focus:outline-none"
+            />
           </section>
         )}
       </div>

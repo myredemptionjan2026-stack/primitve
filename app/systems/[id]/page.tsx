@@ -15,17 +15,22 @@ export default function SystemDetailPage() {
   const [fields, setFields] = useState<DiscoveredField[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [fieldFlags, setFieldFlags] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function load() {
       try {
-        const [sysRes, discRes] = await Promise.all([
+        const [sysRes, discRes, flagsRes] = await Promise.all([
           fetch(`/api/systems/${id}`),
           fetch(`/api/systems/${id}/discovery`),
+          fetch(`/api/systems/${id}/field-flags`),
         ]);
         const sysData = await sysRes.json();
         const discData = await discRes.json();
+        const flagsData = await flagsRes.json();
         setSystem(sysData);
+        setFieldFlags(flagsData?.flags ?? {});
         if (discData?.sample) {
           const text = JSON.stringify(discData.sample, null, 2);
           setJsonText(text);
@@ -149,6 +154,7 @@ export default function SystemDetailPage() {
                       <th className="px-3 py-2 font-medium">Path</th>
                       <th className="px-3 py-2 font-medium">Type</th>
                       <th className="px-3 py-2 font-medium">Example</th>
+                      <th className="px-3 py-2 font-medium">Role</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -166,6 +172,33 @@ export default function SystemDetailPage() {
                         <td className="px-3 py-1.5 text-[11px] text-slate-400">
                           {f.example ?? ""}
                         </td>
+                        <td className="px-3 py-1.5">
+                          <select
+                            value={fieldFlags[f.path] ?? ""}
+                            onChange={async (e) => {
+                              const v = e.target.value as "" | "key_id" | "business_critical";
+                              const flag = v === "" ? null : v;
+                              const res = await fetch(`/api/systems/${id}/field-flags`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ field_path: f.path, flag }),
+                              });
+                              if (res.ok) {
+                                setFieldFlags((prev) => {
+                                  const next = { ...prev };
+                                  if (flag) next[f.path] = flag;
+                                  else delete next[f.path];
+                                  return next;
+                                });
+                              }
+                            }}
+                            className="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-[11px] text-slate-200 focus:border-primitive-accent focus:outline-none"
+                          >
+                            <option value="">—</option>
+                            <option value="key_id">Key ID</option>
+                            <option value="business_critical">Business critical</option>
+                          </select>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -173,6 +206,112 @@ export default function SystemDetailPage() {
               </div>
             )}
           </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+          <h2 className="text-sm font-medium text-slate-200">Test endpoint</h2>
+          <p className="text-xs text-slate-400">
+            Send a live request (credentials are not stored). Or simulate against the discovery sample without calling the API.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs text-slate-400">Method</label>
+              <select
+                id="test-method"
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white"
+              >
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="PATCH">PATCH</option>
+                <option value="DELETE">DELETE</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-slate-400">Path (e.g. /v1/workorders)</label>
+              <input
+                id="test-path"
+                type="text"
+                placeholder="/"
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500"
+              />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs text-slate-400">API key (optional)</label>
+              <input
+                id="test-apikey"
+                type="password"
+                placeholder="Session only, not stored"
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-slate-400">Bearer token (optional)</label>
+              <input
+                id="test-bearer"
+                type="password"
+                placeholder="Session only, not stored"
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                const method = (document.getElementById("test-method") as HTMLSelectElement)?.value ?? "GET";
+                const path = (document.getElementById("test-path") as HTMLInputElement)?.value ?? "/";
+                const apiKey = (document.getElementById("test-apikey") as HTMLInputElement)?.value ?? "";
+                const bearer = (document.getElementById("test-bearer") as HTMLInputElement)?.value ?? "";
+                setError(null);
+                try {
+                  const res = await fetch(`/api/systems/${id}/test`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      method,
+                      path: path || "/",
+                      apiKey: apiKey || undefined,
+                      bearerToken: bearer || undefined,
+                    }),
+                  });
+                  const data = await res.json();
+                  if (data.error) setError(data.error);
+                  else setMessage(`Status ${data.statusCode}. ${data.summary ?? ""}`);
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+              className="rounded-lg bg-primitive-accent px-4 py-2 text-xs font-medium text-white hover:bg-primitive-accentHover"
+            >
+              Send live request
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                setError(null);
+                try {
+                  const res = await fetch(`/api/systems/${id}/simulate`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({}),
+                  });
+                  const data = await res.json();
+                  setMessage(data.message ?? "Simulation complete. No live call made.");
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+              className="rounded-lg border border-slate-600 px-4 py-2 text-xs text-slate-300 hover:bg-slate-800"
+            >
+              Simulate (no credentials)
+            </button>
+          </div>
+          {message && (
+            <p className="text-xs text-slate-300 rounded-lg bg-slate-950 p-3">{message}</p>
+          )}
         </section>
       </div>
     </main>
