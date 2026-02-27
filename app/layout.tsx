@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AuthShell from "@/components/AuthShell";
 
 export const metadata: Metadata = {
   title: "Primitive — Discover. Test. Document.",
@@ -15,10 +14,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen antialiased">
-        <AuthShell>{children}</AuthShell>
+      <body className="min-h-screen antialiased bg-primitive-bg text-slate-100">
+        {children}
       </body>
     </html>
   );
 }
+
 
