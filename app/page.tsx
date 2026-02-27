@@ -10,6 +10,8 @@ export default function DashboardPage() {
   const [showNewProject, setShowNewProject] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/projects")
@@ -35,6 +37,29 @@ export default function DashboardPage() {
       setNewName("");
       setNewDesc("");
       setShowNewProject(false);
+    }
+  }
+
+  async function resetAllData() {
+    const ok = window.confirm(
+      "This will delete ALL projects, systems, scenarios, mappings, constraints, field flags, and discovery data. This cannot be undone. Continue?"
+    );
+    if (!ok) return;
+    setResetting(true);
+    setResetMessage(null);
+    try {
+      const res = await fetch("/api/admin/reset", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setResetMessage(data?.error ?? "Reset failed");
+      } else {
+        setProjects([]);
+        setResetMessage("All Primitive data deleted.");
+      }
+    } catch (e) {
+      setResetMessage((e as Error).message);
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -149,6 +174,24 @@ export default function DashboardPage() {
                 </li>
               ))}
             </ul>
+          )}
+        </section>
+
+        <section className="mt-10 rounded-xl border border-rose-900 bg-rose-950/40 p-5">
+          <h2 className="text-sm font-semibold text-rose-300">Danger zone</h2>
+          <p className="mt-1 text-xs text-rose-200/80">
+            Delete all Primitive data from this Supabase project. Intended for local/dev or when you want a clean slate.
+          </p>
+          <button
+            type="button"
+            onClick={resetAllData}
+            disabled={resetting}
+            className="mt-3 rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-500 disabled:opacity-60"
+          >
+            {resetting ? "Deleting everything…" : "Delete ALL projects, systems, and scenarios"}
+          </button>
+          {resetMessage && (
+            <p className="mt-2 text-xs text-rose-200">{resetMessage}</p>
           )}
         </section>
       </div>

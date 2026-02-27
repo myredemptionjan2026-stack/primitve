@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import type { Project, System, Scenario } from "@/lib/types";
 
 interface ScenarioWithMappings extends Scenario {
@@ -11,6 +11,7 @@ interface ScenarioWithMappings extends Scenario {
 
 export default function ProjectDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
   const [project, setProject] = useState<Project | null>(null);
   const [systems, setSystems] = useState<System[]>([]);
@@ -30,6 +31,7 @@ export default function ProjectDetailPage() {
   const [useCaseParsing, setUseCaseParsing] = useState(false);
   const [prefillCtaId, setPrefillCtaId] = useState<string>("");
   const [prefillCtsId, setPrefillCtsId] = useState<string>("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -134,6 +136,30 @@ export default function ProjectDetailPage() {
     }
   }
 
+  async function deleteProject() {
+    if (!project) return;
+    const ok = window.confirm(
+      `Delete project “${project.name}” and all of its scenarios and mappings? This cannot be undone.`
+    );
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        router.push("/");
+      } else {
+        const data = await res.json();
+        // eslint-disable-next-line no-alert
+        alert(data?.error ?? "Failed to delete project");
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   function copySpec() {
     if (specMarkdown) navigator.clipboard.writeText(specMarkdown);
   }
@@ -161,15 +187,27 @@ export default function ProjectDetailPage() {
     <main className="min-h-screen bg-primitive-bg text-slate-100">
       <div className="mx-auto max-w-5xl px-6 py-10">
         <header className="mb-8">
-          <Link
-            href="/"
-            className="text-sm text-primitive-accent hover:underline"
-          >
-            ← Dashboard
-          </Link>
-          <h1 className="mt-2 text-2xl font-semibold text-white">
-            {project.name}
-          </h1>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <Link
+                href="/"
+                className="text-sm text-primitive-accent hover:underline"
+              >
+                ← Dashboard
+              </Link>
+              <h1 className="mt-2 text-2xl font-semibold text-white">
+                {project.name}
+              </h1>
+            </div>
+            <button
+              type="button"
+              onClick={deleteProject}
+              disabled={deleting}
+              className="rounded-lg border border-rose-700 bg-rose-950/40 px-3 py-1.5 text-xs font-semibold text-rose-200 hover:bg-rose-900/60 disabled:opacity-60"
+            >
+              {deleting ? "Deleting…" : "Delete project"}
+            </button>
+          </div>
           {project.description && (
             <p className="mt-1 text-slate-400">{project.description}</p>
           )}
