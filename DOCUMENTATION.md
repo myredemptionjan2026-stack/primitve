@@ -72,15 +72,26 @@ primitive/
 │   │   │   │   ├── route.ts          # GET, PATCH, DELETE project
 │   │   │   │   └── scenarios/
 │   │   │   │       └── route.ts      # GET (list), POST (create) scenarios
+│   │   │   └── spec/
+│   │   │       └── route.ts           # GET (generate Markdown spec)
 │   │   └── systems/
 │   │       ├── route.ts              # GET (list), POST (create)
-│   │       └── [id]/route.ts         # GET, PATCH, DELETE system
+│   │       └── [id]/
+│   │           ├── route.ts          # GET, PATCH, DELETE system
+│   │           └── discovery/
+│   │               └── route.ts      # GET/POST discovery sample (JSON → fields)
+│   ├── scenarios/
+│   │   └── [id]/
+│   │       └── page.tsx              # Scenario detail (CTA/CTS + field mappings)
+│   ├── systems/
+│   │   └── [id]/page.tsx             # System detail (paste JSON, discovered fields)
 │   ├── globals.css
 │   ├── layout.tsx
 │   ├── page.tsx                      # Dashboard
 │   └── projects/
 │       └── [id]/page.tsx             # Project detail (systems + scenarios)
 ├── lib/
+│   ├── fieldExtractor.ts             # extractFields(sample) for discovery
 │   ├── supabase.ts                   # Supabase client (lazy init for build)
 │   └── types.ts                      # Project, System, Scenario, FieldMapping, Endpoint
 ├── supabase/

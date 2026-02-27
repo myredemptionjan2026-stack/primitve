@@ -24,6 +24,8 @@ export default function ProjectDetailPage() {
   const [sysDocsUrl, setSysDocsUrl] = useState("");
   const [scenarioName, setScenarioName] = useState("");
   const [scenarioDesc, setScenarioDesc] = useState("");
+  const [specMarkdown, setSpecMarkdown] = useState<string | null>(null);
+  const [specLoading, setSpecLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -85,6 +87,33 @@ export default function ProjectDetailPage() {
     }
   }
 
+  async function generateSpec() {
+    setSpecLoading(true);
+    setSpecMarkdown(null);
+    try {
+      const res = await fetch(`/api/projects/${id}/spec`);
+      const data = await res.json();
+      if (res.ok && data?.markdown) setSpecMarkdown(data.markdown);
+    } finally {
+      setSpecLoading(false);
+    }
+  }
+
+  function copySpec() {
+    if (specMarkdown) navigator.clipboard.writeText(specMarkdown);
+  }
+
+  function downloadSpec() {
+    if (!specMarkdown) return;
+    const blob = new Blob([specMarkdown], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `integration-spec-${project?.name ?? "project"}.md`.replace(/\s+/g, "-");
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (loading || !project) {
     return (
       <main className="min-h-screen bg-primitive-bg p-6">
@@ -109,6 +138,16 @@ export default function ProjectDetailPage() {
           {project.description && (
             <p className="mt-1 text-slate-400">{project.description}</p>
           )}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={generateSpec}
+              disabled={specLoading}
+              className="rounded-lg bg-primitive-accent px-4 py-2 text-sm font-medium text-white hover:bg-primitive-accentHover disabled:opacity-60"
+            >
+              {specLoading ? "Generating…" : "Generate integration spec"}
+            </button>
+          </div>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-2">
@@ -268,21 +307,51 @@ export default function ProjectDetailPage() {
                     key={s.id}
                     className="rounded-xl border border-slate-700 bg-slate-800/60 p-4"
                   >
-                    <span className="font-medium text-white">{s.name}</span>
-                    {s.description && (
-                      <p className="mt-1 text-sm text-slate-400">
-                        {s.description}
+                    <Link
+                      href={`/scenarios/${s.id}`}
+                      className="block"
+                    >
+                      <span className="font-medium text-white">{s.name}</span>
+                      {s.description && (
+                        <p className="mt-1 text-sm text-slate-400">
+                          {s.description}
+                        </p>
+                      )}
+                      <p className="mt-2 text-xs text-slate-500">
+                        Open to set CTA/CTS and field mappings
                       </p>
-                    )}
-                    <p className="mt-2 text-xs text-slate-500">
-                      CTA/CTS — mapping UI coming next
-                    </p>
+                    </Link>
                   </li>
                 ))}
               </ul>
             )}
           </section>
         </div>
+
+        {specMarkdown !== null && (
+          <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
+            <h2 className="text-lg font-medium text-slate-200">Integration spec</h2>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={copySpec}
+                className="rounded-lg border border-slate-600 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+              >
+                Copy to clipboard
+              </button>
+              <button
+                type="button"
+                onClick={downloadSpec}
+                className="rounded-lg border border-slate-600 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+              >
+                Download .md
+              </button>
+            </div>
+            <pre className="max-h-[60vh] overflow-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-xs text-slate-300 whitespace-pre-wrap font-sans">
+              {specMarkdown}
+            </pre>
+          </section>
+        )}
       </div>
     </main>
   );
