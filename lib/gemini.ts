@@ -1,16 +1,36 @@
 /**
  * Server-only Gemini helper. Uses REST API so no SDK required.
- * Set GEMINI_API_KEY in env.
+ * Set GEMINI_API_KEY in env (or OPENAI_API_KEY as fallback).
+ * Model can be passed per request or set via GEMINI_MODEL env.
  */
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
-export async function generateText(prompt: string): Promise<string> {
-  const key = process.env.GEMINI_API_KEY;
+export const GEMINI_MODEL_IDS = [
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-pro-latest",
+  "gemini-1.0-pro-latest",
+] as const;
+
+export type GeminiModelId = (typeof GEMINI_MODEL_IDS)[number];
+
+const DEFAULT_MODEL: GeminiModelId = "gemini-2.0-flash";
+
+export async function generateText(
+  prompt: string,
+  model?: string | null
+): Promise<string> {
+  const key = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
   if (!key) {
-    throw new Error("GEMINI_API_KEY is not set");
+    throw new Error("GEMINI_API_KEY is not set (or set OPENAI_API_KEY as fallback)");
   }
-  const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(key)}`, {
+  const modelId =
+    model && GEMINI_MODEL_IDS.includes(model as GeminiModelId)
+      ? model
+      : (process.env.GEMINI_MODEL as GeminiModelId) || DEFAULT_MODEL;
+  const url = `${GEMINI_BASE}/${modelId}:generateContent?key=${encodeURIComponent(key)}`;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

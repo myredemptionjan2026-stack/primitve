@@ -3,9 +3,10 @@ import { generateText, parseJsonFromText } from "@/lib/gemini";
 
 export async function POST(req: Request) {
   try {
-    const { description, systemNames } = (await req.json()) as {
+    const { description, systemNames, model } = (await req.json()) as {
       description: string;
       systemNames?: string[];
+      model?: string | null;
     };
     if (!description?.trim()) {
       return NextResponse.json(
@@ -29,7 +30,7 @@ Respond with ONLY a single JSON object (no markdown, no explanation) with these 
 - keyEntities: string[] (e.g. ["Work Order", "Site", "Contact"])
 - oneLiner: string (one sentence summary of the use case)`;
 
-    const text = await generateText(prompt);
+    const text = await generateText(prompt, model);
     const parsed = parseJsonFromText<{
       suggestedName?: string;
       ctaSystemName?: string | null;

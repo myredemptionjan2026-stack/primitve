@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { System } from "@/lib/types";
 
+const GEMINI_MODELS = [
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-pro-latest",
+  "gemini-1.0-pro-latest",
+];
+
 type Step = 1 | 2 | 3;
 
 interface ParsedUseCase {
@@ -30,6 +38,7 @@ export default function ExploreNewPage() {
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState<{ projectId: string; scenarioId: string; ctaId: string; ctsId: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [geminiModel, setGeminiModel] = useState("gemini-2.0-flash");
 
   useEffect(() => {
     fetch("/api/systems")
@@ -49,6 +58,7 @@ export default function ExploreNewPage() {
         body: JSON.stringify({
           description: useCaseText.trim(),
           systemNames: systems.map((s) => s.name),
+          model: geminiModel,
         }),
       });
       const data = await res.json();
@@ -182,6 +192,18 @@ export default function ExploreNewPage() {
             <p className="text-xs text-slate-500">
               Describe the use case in a sentence. Gemini will suggest a scenario name and source/target systems.
             </p>
+            <div>
+              <label className="mb-1 block text-sm text-slate-400">Gemini model</label>
+              <select
+                value={geminiModel}
+                onChange={(e) => setGeminiModel(e.target.value)}
+                className="w-full max-w-xs rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-primitive-accent focus:outline-none"
+              >
+                {GEMINI_MODELS.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
             <textarea
               value={useCaseText}
               onChange={(e) => setUseCaseText(e.target.value)}
