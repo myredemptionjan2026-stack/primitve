@@ -25,13 +25,14 @@ export async function POST(
   const { id: systemId } = await params;
   const body = (await req.json()) as {
     field_path: string;
-    flag: "key_id" | "business_critical" | null;
+    flag?: string | null;
   };
   if (!body.field_path?.trim()) {
     return NextResponse.json({ error: "field_path required" }, { status: 400 });
   }
   const path = body.field_path.trim();
-  if (body.flag === null || body.flag === "") {
+  const flagValue = body.flag == null || body.flag === "" ? null : body.flag;
+  if (flagValue === null) {
     await supabase
       .from("field_flags")
       .delete()
@@ -39,7 +40,7 @@ export async function POST(
       .eq("field_path", path);
     return NextResponse.json({ ok: true, flag: null });
   }
-  if (body.flag !== "key_id" && body.flag !== "business_critical") {
+  if (flagValue !== "key_id" && flagValue !== "business_critical") {
     return NextResponse.json(
       { error: "flag must be key_id or business_critical" },
       { status: 400 }
@@ -48,7 +49,7 @@ export async function POST(
   const { data, error } = await supabase
     .from("field_flags")
     .upsert(
-      { system_id: systemId, field_path: path, flag: body.flag },
+      { system_id: systemId, field_path: path, flag: flagValue },
       { onConflict: "system_id,field_path" }
     )
     .select()
