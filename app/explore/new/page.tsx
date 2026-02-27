@@ -92,8 +92,7 @@ export default function ExploreNewPage() {
     }
   }
 
-  async function addSystem(e: React.FormEvent) {
-    e.preventDefault();
+  async function addSystem() {
     if (!newSysName.trim() || !newSysBaseUrl.trim()) return;
     setAddingSystem(true);
     setError(null);
@@ -282,7 +281,7 @@ export default function ExploreNewPage() {
             )}
             <div className="rounded-lg border border-slate-700 bg-slate-950 p-4 space-y-3">
               <p className="text-xs font-medium text-slate-400">Quick-add system</p>
-              <form onSubmit={addSystem} className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
                 <input
                   type="text"
                   value={newSysName}
@@ -298,13 +297,14 @@ export default function ExploreNewPage() {
                   className="min-w-[200px] rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-primitive-accent focus:outline-none"
                 />
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={addSystem}
                   disabled={addingSystem || !newSysName.trim() || !newSysBaseUrl.trim()}
                   className="rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
                 >
                   {addingSystem ? "Adding…" : "Add system"}
                 </button>
-              </form>
+              </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
