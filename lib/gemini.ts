@@ -6,7 +6,10 @@
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export const GEMINI_MODEL_IDS = [
-  "gemini-2.0-flash",
+  "gemini-3-flash-preview",
+  "gemini-3-pro-preview",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
   "gemini-2.0-flash-lite",
   "gemini-1.5-flash-latest",
   "gemini-1.5-pro-latest",
@@ -15,7 +18,7 @@ export const GEMINI_MODEL_IDS = [
 
 export type GeminiModelId = (typeof GEMINI_MODEL_IDS)[number];
 
-const DEFAULT_MODEL: GeminiModelId = "gemini-2.0-flash";
+const DEFAULT_MODEL: GeminiModelId = "gemini-2.5-flash";
 
 export async function generateText(
   prompt: string,

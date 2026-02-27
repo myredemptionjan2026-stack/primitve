@@ -5,7 +5,10 @@ import Link from "next/link";
 import type { System } from "@/lib/types";
 
 const GEMINI_MODELS = [
-  "gemini-2.0-flash",
+  "gemini-3-flash-preview",
+  "gemini-3-pro-preview",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
   "gemini-2.0-flash-lite",
   "gemini-1.5-flash-latest",
   "gemini-1.5-pro-latest",
@@ -38,7 +41,7 @@ export default function ExploreNewPage() {
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState<{ projectId: string; scenarioId: string; ctaId: string; ctsId: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [geminiModel, setGeminiModel] = useState("gemini-2.0-flash");
+  const [geminiModel, setGeminiModel] = useState("gemini-2.5-flash");
 
   useEffect(() => {
     fetch("/api/systems")
